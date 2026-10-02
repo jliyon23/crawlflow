@@ -1,0 +1,126 @@
+{
+  "id": "store_locator",
+  "name": "Store locator: ZIP list → HTML search → JSON detail → CSV",
+  "settings": {
+    "user_agent": "Crawlflow/0.2 (+local demo)",
+    "headers": {},
+    "cookies": {},
+    "concurrent_requests": 8,
+    "download_delay": 0,
+    "robots_txt": true,
+    "retry_times": 1,
+    "max_pages": 100,
+    "max_items": 500
+  },
+  "variables": {
+    "base": "http://127.0.0.1:8000"
+  },
+  "nodes": [
+    {
+      "id": "zips",
+      "type": "input",
+      "position": { "x": 40, "y": 180 },
+      "data": {
+        "label": "ZIP codes",
+        "input_mode": "table",
+        "table": "zipcode\n10001\n60601\n73301"
+      }
+    },
+    {
+      "id": "search",
+      "type": "request",
+      "position": { "x": 300, "y": 180 },
+      "data": {
+        "label": "Store search",
+        "method": "GET",
+        "url": "{{base}}/demo/search",
+        "params": { "zip": "{{zipcode}}" }
+      }
+    },
+    {
+      "id": "next",
+      "type": "pagination",
+      "position": { "x": 300, "y": 360 },
+      "data": {
+        "label": "Next results page",
+        "pagination_type": "next_link",
+        "next_selector": "a.next",
+        "max_pages": 10
+      }
+    },
+    {
+      "id": "ids",
+      "type": "parser",
+      "position": { "x": 560, "y": 180 },
+      "data": {
+        "label": "Store IDs (HTML)",
+        "parser_type": "html",
+        "item_selector": ".store",
+        "item_selector_type": "css",
+        "fields": [
+          { "name": "store_id", "selector": "./@data-store-id", "selector_type": "xpath", "extract": "text" },
+          { "name": "store_name", "selector": ".name", "selector_type": "css", "extract": "text" }
+        ]
+      }
+    },
+    {
+      "id": "detail",
+      "type": "request",
+      "position": { "x": 820, "y": 180 },
+      "data": {
+        "label": "Store detail API",
+        "method": "GET",
+        "url": "/demo/api/store/{{store_id}}",
+        "headers": { "Accept": "application/json" }
+      }
+    },
+    {
+      "id": "fields",
+      "type": "parser",
+      "position": { "x": 1080, "y": 180 },
+      "data": {
+        "label": "Store fields (JSON)",
+        "parser_type": "json",
+        "record_path": "$.data.store",
+        "fields": [
+          { "name": "StoreId", "selector": "$.id", "selector_type": "jsonpath" },
+          { "name": "Name", "selector": "$.name", "selector_type": "jsonpath" },
+          { "name": "Street", "selector": "$.address.street", "selector_type": "jsonpath" },
+          { "name": "City", "selector": "$.address.city", "selector_type": "jsonpath" },
+          { "name": "State", "selector": "$.address.state", "selector_type": "jsonpath" },
+          { "name": "ZipCode", "selector": "$.address.zip", "selector_type": "jsonpath" },
+          { "name": "Phone", "selector": "$.phone", "selector_type": "jsonpath" },
+          { "name": "OpenHours", "selector": "$.hours", "selector_type": "jsonpath" },
+          { "name": "Latitude", "selector": "$.geo.lat", "selector_type": "jsonpath" },
+          { "name": "Longitude", "selector": "$.geo.lng", "selector_type": "jsonpath" },
+          { "name": "Url", "selector": "{{base}}{{url}}", "selector_type": "jsonpath" },
+          { "name": "SearchZip", "selector": "{{zipcode}}", "selector_type": "jsonpath" }
+        ]
+      }
+    },
+    {
+      "id": "csv",
+      "type": "output",
+      "position": { "x": 1340, "y": 180 },
+      "data": {
+        "label": "stores.csv",
+        "format": "csv",
+        "path": "output/stores.csv",
+        "columns": [
+          "StoreId", "Name", "Street", "City", "State", "ZipCode", "Phone",
+          "OpenHours", "Latitude", "Longitude", "Url", "SearchZip"
+        ],
+        "dedupe_key": "StoreId"
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "zips", "target": "search" },
+    { "id": "e2", "source": "search", "target": "ids" },
+    { "id": "e3", "source": "search", "target": "next" },
+    { "id": "e4", "source": "next", "target": "search", "sourceHandle": "next" },
+    { "id": "e5", "source": "ids", "target": "detail" },
+    { "id": "e6", "source": "detail", "target": "fields" },
+    { "id": "e7", "source": "fields", "target": "csv" }
+  ]
+}

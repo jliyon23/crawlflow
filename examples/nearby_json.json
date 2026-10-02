@@ -1,0 +1,68 @@
+{
+  "id": "nearby_json",
+  "name": "Lat/long list → JSON API → field mapping → JSONL",
+  "settings": {
+    "user_agent": "Crawlflow/0.2 (+local demo)",
+    "download_delay": 0,
+    "robots_txt": true,
+    "max_pages": 50,
+    "max_items": 500
+  },
+  "variables": {},
+  "nodes": [
+    {
+      "id": "points",
+      "type": "input",
+      "position": { "x": 40, "y": 160 },
+      "data": {
+        "label": "Coordinates",
+        "input_mode": "table",
+        "table": "latitude,longitude\n40.7128,-74.0060\n41.8781,-87.6298"
+      }
+    },
+    {
+      "id": "nearby",
+      "type": "request",
+      "position": { "x": 300, "y": 160 },
+      "data": {
+        "label": "Nearby stores API",
+        "method": "GET",
+        "url": "http://127.0.0.1:8000/demo/api/nearby",
+        "params": { "lat": "{{latitude}}", "lng": "{{longitude}}", "limit": "3" }
+      }
+    },
+    {
+      "id": "map",
+      "type": "parser",
+      "position": { "x": 560, "y": 160 },
+      "data": {
+        "label": "Stores",
+        "parser_type": "json",
+        "record_path": "$.data.stores[*]",
+        "fields": [
+          { "name": "StoreId", "selector": "$.id", "selector_type": "jsonpath" },
+          { "name": "Name", "selector": "$.name", "selector_type": "jsonpath" },
+          { "name": "City", "selector": "$.address.city", "selector_type": "jsonpath" },
+          { "name": "Latitude", "selector": "$.geo.lat", "selector_type": "jsonpath" },
+          { "name": "Longitude", "selector": "$.geo.lng", "selector_type": "jsonpath" },
+          { "name": "OpenDays", "selector": "$.hours[*].day", "selector_type": "jsonpath", "multiple": true }
+        ]
+      }
+    },
+    {
+      "id": "out",
+      "type": "output",
+      "position": { "x": 820, "y": 160 },
+      "data": {
+        "label": "nearby.jsonl",
+        "format": "jsonl",
+        "path": "output/nearby.jsonl"
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "points", "target": "nearby" },
+    { "id": "e2", "source": "nearby", "target": "map" },
+    { "id": "e3", "source": "map", "target": "out" }
+  ]
+}

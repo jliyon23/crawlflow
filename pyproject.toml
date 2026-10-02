@@ -1,0 +1,22 @@
+[project]
+name = "crawlflow"
+version = "0.1.0"
+description = "Visual, n8n-style web crawler workflows compiled onto Scrapy."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "scrapy>=2.12",
+  "pydantic>=2.10",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+]
+
+[project.scripts]
+crawlflow = "crawlflow.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["crawlflow*"]

@@ -1,0 +1,86 @@
+{
+  "id": "quotes",
+  "name": "Quotes to Scrape",
+  "settings": {
+    "user_agent": "Crawlflow/0.2 (+local research crawler)",
+    "headers": {
+      "Accept-Language": "en-US,en;q=0.9"
+    },
+    "cookies": {},
+    "concurrent_requests": 4,
+    "download_delay": 0.4,
+    "robots_txt": true,
+    "retry_times": 2,
+    "max_pages": 12,
+    "max_items": 200,
+    "allowed_domains": ["quotes.toscrape.com"]
+  },
+  "variables": {},
+  "nodes": [
+    {
+      "id": "start",
+      "type": "input",
+      "position": { "x": 80, "y": 180 },
+      "data": {
+        "label": "Start",
+        "input_mode": "single",
+        "url": "https://quotes.toscrape.com/"
+      }
+    },
+    {
+      "id": "request",
+      "type": "request",
+      "position": { "x": 320, "y": 180 },
+      "data": {
+        "label": "Fetch page",
+        "method": "GET",
+        "url": "{{url}}"
+      }
+    },
+    {
+      "id": "extract",
+      "type": "parser",
+      "position": { "x": 580, "y": 80 },
+      "data": {
+        "label": "Quotes",
+        "parser_type": "html",
+        "item_selector": ".quote",
+        "item_selector_type": "css",
+        "fields": [
+          { "name": "text", "selector": ".text", "selector_type": "css", "extract": "text" },
+          { "name": "author", "selector": ".author", "selector_type": "css", "extract": "text" },
+          { "name": "tags", "selector": ".tag", "selector_type": "css", "extract": "text", "multiple": true }
+        ]
+      }
+    },
+    {
+      "id": "pagination",
+      "type": "pagination",
+      "position": { "x": 580, "y": 300 },
+      "data": {
+        "label": "Next page",
+        "pagination_type": "next_link",
+        "next_selector": ".next a",
+        "max_pages": 12
+      }
+    },
+    {
+      "id": "store",
+      "type": "output",
+      "position": { "x": 860, "y": 80 },
+      "data": {
+        "label": "JSONL",
+        "format": "jsonl",
+        "path": "output/quotes.jsonl",
+        "columns": ["text", "author", "tags"]
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "start", "target": "request" },
+    { "id": "e2", "source": "request", "target": "extract" },
+    { "id": "e3", "source": "request", "target": "pagination" },
+    { "id": "e4", "source": "extract", "target": "store" },
+    { "id": "e5", "source": "pagination", "target": "request", "sourceHandle": "next" }
+  ]
+}
