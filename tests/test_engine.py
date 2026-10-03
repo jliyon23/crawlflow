@@ -2,11 +2,11 @@ import json
 
 from scrapy.http import HtmlResponse, Request, TextResponse
 
-from crawlflow import jsonpath
-from crawlflow.graph import check
-from crawlflow.schema import FlowNode, workflow_from_obj
-from crawlflow.spider import WorkflowSpider, input_contexts, parse_records
-from crawlflow.templating import render
+from crawlflow.engine import jsonpath
+from crawlflow.engine.graph import check
+from crawlflow.engine.spider import WorkflowSpider, input_contexts, parse_records
+from crawlflow.engine.templating import render
+from crawlflow.models.workflow import FlowNode, workflow_from_obj
 
 DOC = {
     "data": {

@@ -62,7 +62,10 @@ See `examples/quotes.json`. Edges may set `sourceHandle` (`next`, `true`, `false
 ## Layout
 
 ```
-crawlflow/          Python package (schema, spider, CLI, FastAPI)
+crawlflow/models/   Workflow schema
+crawlflow/engine/   Graph checks, templating, Scrapy spider
+crawlflow/api/      FastAPI app, storage, and run orchestration
+crawlflow/demo/     Bundled fake storefront used by the examples
 examples/           Sample graphs
 web/                React Flow editor
 ```

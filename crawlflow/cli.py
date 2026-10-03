@@ -5,9 +5,9 @@ import json
 import sys
 from pathlib import Path
 
-from crawlflow.graph import check
-from crawlflow.schema import workflow_from_obj
-from crawlflow.runtime import run_workflow
+from crawlflow.engine.graph import check
+from crawlflow.engine.runtime import run_workflow
+from crawlflow.models.workflow import workflow_from_obj
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "serve":
         import uvicorn
 
-        uvicorn.run("crawlflow.api:app", host=args.host, port=args.port, reload=False)
+        uvicorn.run("crawlflow.api.app:app", host=args.host, port=args.port, reload=False)
         return 0
 
     return 1

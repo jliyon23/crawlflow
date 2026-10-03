@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from crawlflow.schema import FlowNode, Workflow
-from crawlflow.spider import parse_table
-from crawlflow.templating import referenced
+from crawlflow.models.workflow import FlowNode, Workflow
+from crawlflow.engine.spider import parse_table
+from crawlflow.engine.templating import referenced
 
 BUILTIN_VARS = {"url", "link"}
 

@@ -10,8 +10,8 @@ from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from crawlflow.schema import FlowNode, Workflow
-from crawlflow.spider import WorkflowSpider
+from crawlflow.models.workflow import FlowNode, Workflow
+from crawlflow.engine.spider import WorkflowSpider
 
 REPORT_ITEMS = 200
 
@@ -38,7 +38,7 @@ def scrapy_settings(workflow: Workflow) -> dict[str, Any]:
         },
         "TELNETCONSOLE_ENABLED": False,
         "LOG_LEVEL": "INFO",
-        "ITEM_PIPELINES": {"crawlflow.runtime.OutputPipeline": 100},
+        "ITEM_PIPELINES": {"crawlflow.engine.runtime.OutputPipeline": 100},
     }
     if s.max_pages:
         settings["CLOSESPIDER_PAGECOUNT"] = s.max_pages

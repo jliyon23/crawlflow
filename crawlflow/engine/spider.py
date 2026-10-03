@@ -22,9 +22,9 @@ import scrapy
 from parsel import Selector
 from scrapy.http import Response, TextResponse
 
-from crawlflow import jsonpath
-from crawlflow.schema import ExtractField, FlowEdge, FlowNode, Workflow
-from crawlflow.templating import is_missing, is_template, lookup, render, render_map
+from crawlflow.engine import jsonpath
+from crawlflow.models.workflow import ExtractField, FlowEdge, FlowNode, Workflow
+from crawlflow.engine.templating import is_missing, is_template, lookup, render, render_map
 
 SAMPLE_LIMIT = 5
 RESPONSE_SAMPLE_BYTES = 300_000
