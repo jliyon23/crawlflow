@@ -1,6 +1,7 @@
 import { tableHeader } from "../model/variables";
 import { Field, KeyValueEditor, NumberInput, Section, TextInput } from "./common";
 import type { FormProps } from "./types";
+import { fileLabel, grid2, hint } from "../ui";
 
 export default function InputForm({ data, set }: FormProps) {
   const mode = data.input_mode || "single";
@@ -65,7 +66,7 @@ export default function InputForm({ data, set }: FormProps) {
               onChange={(e) => set({ table: e.target.value })}
             />
           </Field>
-          <label className="file">
+          <label className={fileLabel}>
             Load CSV file…
             <input
               type="file"
@@ -77,7 +78,7 @@ export default function InputForm({ data, set }: FormProps) {
       )}
 
       {mode === "range" && (
-        <div className="grid2">
+        <div className={grid2}>
           <Field label="Variable">
             <TextInput mono value={data.range_var} placeholder="page" onChange={(range_var) => set({ range_var })} />
           </Field>
@@ -94,7 +95,7 @@ export default function InputForm({ data, set }: FormProps) {
       )}
 
       <Section title="Constant variables" open={Object.keys(data.variables || {}).length > 0}>
-        <p className="hint">Added to every row, e.g. an API key or country code.</p>
+        <p className={`mb-2.5 ${hint}`}>Added to every row, e.g. an API key or country code.</p>
         <KeyValueEditor value={data.variables} onChange={(variables) => set({ variables })} valuePlaceholder="value" />
       </Section>
     </>

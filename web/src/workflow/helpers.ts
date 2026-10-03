@@ -32,6 +32,7 @@ export function toRf(wf: Workflow): { nodes: Node[]; edges: Edge[] } {
       targetHandle: e.targetHandle ?? undefined,
       label: e.sourceHandle && e.sourceHandle !== "default" ? e.sourceHandle : undefined,
       animated: e.sourceHandle === "next",
+      style: { stroke: "#3dd68c", strokeWidth: 2 },
     })),
   };
 }
@@ -44,6 +45,7 @@ export function edgeFromConnection(c: Connection): Edge {
     target: c.target,
     label: c.sourceHandle && c.sourceHandle !== "default" ? c.sourceHandle : undefined,
     animated: c.sourceHandle === "next",
+    style: { stroke: "#3dd68c", strokeWidth: 2 },
   };
 }
 

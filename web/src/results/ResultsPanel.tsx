@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { OutputReport, RunReport } from "../model/types";
 import { RecordsTable } from "../forms/common";
+import { cx, iconBtn, noticeError, secondaryBtn } from "../ui";
 
 function serializeItems(output: OutputReport): string {
   const rows = output.items || [];
@@ -48,8 +49,8 @@ export default function ResultsPanel({ report, error, labels, onClose }: Props) 
   const current = report?.outputs[tab];
 
   return (
-    <section className="results">
-      <div className="results-head">
+    <section className="flex max-h-[38vh] flex-col border-t border-line bg-bg">
+      <div className="flex items-center gap-3 border-b border-line px-3 py-1.5 text-xs">
         <strong>
           {error
             ? "Run failed"
@@ -57,42 +58,42 @@ export default function ResultsPanel({ report, error, labels, onClose }: Props) 
                 report?.reason && report.reason !== "finished" ? ` · stopped: ${report.reason}` : ""
               }`}
         </strong>
-        <div className="tabs">
+        <div className="flex flex-1 gap-1 overflow-x-auto">
           {outputIds.map((id) => (
-            <button key={id} type="button" className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
+            <button key={id} type="button" className={cx("cursor-pointer whitespace-nowrap rounded-md border border-transparent bg-transparent px-2 py-0.5 text-xs text-soft", tab === id && "border-field-line bg-elevated text-text")} onClick={() => setTab(id)}>
               {labels[id] || id} ({report!.outputs[id].count})
             </button>
           ))}
           {nodeErrors.length > 0 && (
-            <button type="button" className={tab === "errors" ? "active" : ""} onClick={() => setTab("errors")}>
+            <button type="button" className={cx("cursor-pointer whitespace-nowrap rounded-md border border-transparent bg-transparent px-2 py-0.5 text-xs text-soft", tab === "errors" && "border-field-line bg-elevated text-text")} onClick={() => setTab("errors")}>
               Errors ({nodeErrors.length})
             </button>
           )}
-          <button type="button" className={tab === "log" ? "active" : ""} onClick={() => setTab("log")}>
+          <button type="button" className={cx("cursor-pointer whitespace-nowrap rounded-md border border-transparent bg-transparent px-2 py-0.5 text-xs text-soft", tab === "log" && "border-field-line bg-elevated text-text")} onClick={() => setTab("log")}>
             Log
           </button>
         </div>
-        <button type="button" className="icon" title="Close" onClick={onClose}>
+        <button type="button" className={iconBtn} title="Close" onClick={onClose}>
           ×
         </button>
       </div>
-      <div className="results-body">
-        {error && tab === "log" && <pre className="log">{error}</pre>}
-        {!error && tab === "log" && <pre className="log">{report?.log}</pre>}
+      <div className="min-h-0 overflow-auto px-3 py-2">
+        {error && tab === "log" && <pre className="m-0 whitespace-pre-wrap text-[11px]">{error}</pre>}
+        {!error && tab === "log" && <pre className="m-0 whitespace-pre-wrap text-[11px]">{report?.log}</pre>}
         {tab === "errors" &&
           nodeErrors.map((e) => (
-            <div key={e} className="notice error">
+            <div key={e} className={noticeError}>
               {e}
             </div>
           ))}
         {current && (
           <>
-            <div className="hint results-file">
+            <div className="flex items-center justify-between gap-3 text-[11px] text-muted">
               <span>
                 {current.count} records
                 {current.count > current.items.length ? ` · showing first ${current.items.length}` : ""}
               </span>
-              <button type="button" className="secondary" onClick={() => downloadOutput(current, labels[tab] || tab)}>
+              <button type="button" className={secondaryBtn} onClick={() => downloadOutput(current, labels[tab] || tab)}>
                 Download {current.filename || current.path}
               </button>
             </div>

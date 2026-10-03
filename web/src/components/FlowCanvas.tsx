@@ -23,7 +23,7 @@ export default function FlowCanvas({
   selectedId,
 }: Props) {
   return (
-    <div className="canvas">
+    <div className="h-full min-h-0">
       <ReactFlow
         key={fitKey}
         nodes={nodes}
@@ -37,8 +37,15 @@ export default function FlowCanvas({
         onNodesDelete={(deleted) => deleted.some((n) => n.id === selectedId) && onSelect(null)}
         colorMode="dark"
         fitView
+        defaultEdgeOptions={{
+          style: { stroke: "#3dd68c", strokeWidth: 2 },
+          labelStyle: { fill: "#a1a1a1", fontSize: 10 },
+          labelBgStyle: { fill: "#1c1c1c" },
+          labelBgPadding: [4, 2],
+          labelBgBorderRadius: 4,
+        }}
       >
-        <Background />
+        <Background gap={20} size={1.4} color="#333333" />
         <Controls />
         <MiniMap pannable zoomable />
       </ReactFlow>

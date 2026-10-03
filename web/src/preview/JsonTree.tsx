@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { samePath, toPath, type Segment } from "./jsonpath";
+import { cx, jsonTree } from "../ui";
 
 type Props = {
   data: unknown;
@@ -12,7 +13,7 @@ const PAGE = 50;
 
 export default function JsonTree({ data, records, selected, onPick }: Props) {
   return (
-    <div className="json-tree">
+    <div className={jsonTree}>
       <TreeRow label="$" value={data} path={[]} depth={0} ctx={{ records, selected, onPick }} />
     </div>
   );
@@ -57,22 +58,26 @@ function TreeRow({
   return (
     <div className="jt-node">
       <div
-        className={`jt-row${isRecord ? " jt-record" : ""}${isSelected ? " jt-selected" : ""}`}
+        className={cx(
+          "flex items-center gap-0.5 whitespace-nowrap pr-1.5 leading-[19px] hover:bg-hover",
+          isRecord && "bg-[#111]",
+          isSelected && "bg-[#1c1c1c]",
+        )}
         style={{ paddingLeft: depth * 12 }}
         title={toPath(path)}
       >
         {isObj ? (
-          <button type="button" className="jt-toggle" onClick={() => setOpen(!open)}>
+          <button type="button" className="inline-block w-3.5 cursor-pointer border-0 bg-transparent p-0 text-[10px] text-muted" onClick={() => setOpen(!open)}>
             {open ? "▾" : "▸"}
           </button>
         ) : (
-          <span className="jt-toggle" />
+          <span className="inline-block w-3.5" />
         )}
-        <span className="jt-key" onClick={pick}>
+        <span className="cursor-pointer text-text hover:underline" onClick={pick}>
           {label}
         </span>
-        <span className="jt-colon">:</span>
-        <span className={`jt-value jt-${typeOf(value)}`} onClick={pick}>
+        <span className="mr-1 text-muted">:</span>
+        <span className={cx("cursor-pointer overflow-hidden text-ellipsis hover:underline", valueTone(value))} onClick={pick}>
           {preview(value)}
         </span>
       </div>
@@ -84,7 +89,7 @@ function TreeRow({
           {entries.length > limit && (
             <button
               type="button"
-              className="jt-more"
+              className="cursor-pointer border-0 bg-transparent p-0.5 text-[11px] text-text"
               style={{ marginLeft: (depth + 1) * 12 }}
               onClick={() => setLimit(limit + PAGE)}
             >
@@ -95,6 +100,13 @@ function TreeRow({
       )}
     </div>
   );
+}
+
+function valueTone(v: unknown) {
+  const kind = typeOf(v);
+  if (kind === "string") return "text-soft";
+  if (kind === "number") return "text-text";
+  return "text-muted";
 }
 
 function typeOf(v: unknown) {

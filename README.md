@@ -1,7 +1,7 @@
 # Crawlflow
 
 <p align="center">
-  <img src="web/src/assets/images/logo/Crawlflow-nobg.png" alt="Crawlflow" width="280" />
+  <img src="Images/Crawlflow-nobg.png" alt="Crawlflow" width="280" />
 </p>
 
 n8n-style **visual crawler workflows**, executed by **Scrapy**.

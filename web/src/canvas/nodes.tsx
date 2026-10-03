@@ -1,29 +1,17 @@
 import { createContext, useContext } from "react";
 import type { NodeTypes } from "@xyflow/react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import {
-  Braces,
-  Download,
-  GitBranch,
-  Globe,
-  Inbox,
-  Link2,
-  ListOrdered,
-  Repeat,
-  type LucideIcon,
-} from "lucide-react";
 import type { NodeData, NodeReport, NodeType } from "../model/types";
-import { providedVars } from "../model/variables";
 
-export const ICONS: Record<NodeType, LucideIcon> = {
-  input: Inbox,
-  request: Globe,
-  parser: Braces,
-  pagination: ListOrdered,
-  loop: Repeat,
-  follow: Link2,
-  branch: GitBranch,
-  output: Download,
+const SYMBOLS: Record<NodeType, string> = {
+  input: "inbox",
+  request: "language",
+  parser: "data_object",
+  pagination: "format_list_numbered",
+  loop: "repeat",
+  follow: "link",
+  branch: "call_split",
+  output: "download",
 };
 
 export const COLORS: Record<NodeType, string> = {
@@ -37,56 +25,59 @@ export const COLORS: Record<NodeType, string> = {
   output: "#22d3ee",
 };
 
+export function NodeGlyph({ type, box = 32, size = 20, tint = false }: { type: NodeType; box?: number; size?: number; tint?: boolean }) {
+  const color = COLORS[type];
+  return (
+    <span
+      className="grid shrink-0 place-items-center rounded-lg text-white"
+      style={{ width: box, height: box, background: tint ? `${color}33` : "#242424" }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: size }} aria-hidden>
+        {SYMBOLS[type]}
+      </span>
+    </span>
+  );
+}
+
 export const RunContext = createContext<Record<string, NodeReport>>({});
 
 export function CrawlNode({ id, data, type, selected }: NodeProps) {
   const t = (type || "request") as NodeType;
   const d = data as NodeData;
   const report = useContext(RunContext)[id];
-  const vars = providedVars(t, d);
   return (
-    <div className={`cf-node${selected ? " selected" : ""}`} style={{ borderColor: COLORS[t] }}>
+    <div
+      className={`relative min-w-[210px] max-w-[260px] rounded-[10px] border bg-[#2d2d2d] px-2.5 py-2 ${selected ? "border-white/60" : "border-[#3d3d3d]"}`}
+      style={{ boxShadow: `inset 3px 0 0 ${COLORS[t]}, 0 8px 24px rgb(0 0 0 / 28%)` }}
+    >
       {t !== "input" && <Handle type="target" position={Position.Left} />}
-      <div className="cf-node-head">
-        <span className="cf-node-kind" style={{ color: COLORS[t] }}>
-          {(() => {
-            const Icon = ICONS[t];
-            return <Icon size={12} strokeWidth={2.4} aria-hidden />;
-          })()}
-          {t === "parser" ? `${d.parser_type || "html"} parser` : t}
+      <div className="flex items-center gap-2.5">
+        <NodeGlyph type={t} box={34} tint />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[13px] font-semibold leading-tight">{d.label || t}</span>
+          <span className="truncate text-[11px] text-muted">{subtitle(t, d)}</span>
         </span>
         {report && (
-          <span className={`cf-badge${report.errors.length ? " bad" : ""}`} title={report.errors.join("\n")}>
-            {report.errors.length ? `${report.errors.length} err · ` : ""}
-            {report.in}→{report.out}
+          <span className={`rounded-lg px-1.5 text-[10px] ${report.errors.length ? "bg-[#1a0d0d] text-red-300" : "bg-hover text-soft"}`} title={report.errors.join("\n")}>
+            {report.errors.length ? `${report.errors.length} err` : `${report.out}`}
           </span>
         )}
       </div>
-      <div className="cf-node-title">{d.label || t}</div>
-      <div className="cf-node-sub">{subtitle(t, d)}</div>
-      {vars.length > 0 && (
-        <div className="cf-node-vars">
-          {vars.slice(0, 6).map((v) => (
-            <span key={v}>{v}</span>
-          ))}
-          {vars.length > 6 && <span>+{vars.length - 6}</span>}
-        </div>
-      )}
       {t === "branch" ? (
         <>
           <Handle type="source" position={Position.Right} id="true" style={{ top: "35%" }} />
-          <span className="handle-label" style={{ top: "35%" }}>
+          <span className="pointer-events-none absolute right-[-34px] -translate-y-1/2 text-[9px] text-muted" style={{ top: "35%" }}>
             true
           </span>
           <Handle type="source" position={Position.Right} id="false" style={{ top: "70%" }} />
-          <span className="handle-label" style={{ top: "70%" }}>
+          <span className="pointer-events-none absolute right-[-34px] -translate-y-1/2 text-[9px] text-muted" style={{ top: "70%" }}>
             false
           </span>
         </>
       ) : t === "pagination" ? (
         <>
           <Handle type="source" position={Position.Right} id="next" />
-          <span className="handle-label" style={{ top: "50%" }}>
+          <span className="pointer-events-none absolute right-[-34px] -translate-y-1/2 text-[9px] text-muted" style={{ top: "50%" }}>
             next
           </span>
         </>

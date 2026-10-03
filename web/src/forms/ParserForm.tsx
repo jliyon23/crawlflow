@@ -13,6 +13,34 @@ import {
 import type { ExtractField, NodeData } from "../model/types";
 import { Field, RecordsTable, RunInfo, Section, TextInput, VariableChips, cell } from "./common";
 import type { FormProps } from "./types";
+import {
+  check,
+  checkMini,
+  cx,
+  fields as fieldsBox,
+  fieldsHead,
+  ghostSmall,
+  hint,
+  htmlField,
+  htmlOpts,
+  htmlTop,
+  iconBtn,
+  linkBtn,
+  mapPicking,
+  mapPreview,
+  mapRow,
+  mono,
+  narrow,
+  noticeError,
+  noticeWarn,
+  pickRow,
+  sampleHead,
+  sampleSource,
+  segmentBtn,
+  segmentOn,
+  segmented,
+  treeHelp,
+} from "../ui";
 
 const STORE_PRESET = [
   "StoreId",
@@ -42,12 +70,12 @@ export default function ParserForm(props: FormProps) {
 
   return (
     <>
-      <div className="segmented">
+      <div className={segmented}>
         {(["html", "json"] as const).map((k) => (
           <button
             key={k}
             type="button"
-            className={kind === k ? "active" : ""}
+            className={cx(segmentBtn, kind === k && segmentOn)}
             onClick={() =>
               set({
                 parser_type: k,
@@ -82,7 +110,7 @@ export default function ParserForm(props: FormProps) {
             ))}
           </select>
         </Field>
-        <label className="check">
+        <label className={check}>
           <input type="checkbox" checked={!!data.keep_empty} onChange={(e) => set({ keep_empty: e.target.checked })} />
           Continue with empty fields when nothing matches
         </label>
@@ -105,14 +133,14 @@ function SampleSource({
 }) {
   const [editing, setEditing] = useState(false);
   return (
-    <div className="sample-source">
-      <div className="sample-head">
+    <div className={sampleSource}>
+      <div className={sampleHead}>
         <span>Sample: {origin || <em>none. Run a preview or paste one</em>}</span>
-        <button type="button" className="link" onClick={() => setEditing(!editing)}>
+        <button type="button" className={linkBtn} onClick={() => setEditing(!editing)}>
           {editing ? "done" : "paste"}
         </button>
         {data.sample && (
-          <button type="button" className="link" onClick={() => set({ sample: undefined })}>
+          <button type="button" className={linkBtn} onClick={() => set({ sample: undefined })}>
             clear
           </button>
         )}
@@ -226,7 +254,7 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
         label="Record selector"
         hint={
           records.error ? (
-            <span className="error-text">{records.error}</span>
+            <span className="text-danger">{records.error}</span>
           ) : parsed.ok ? (
             `${records.matches.length} record${records.matches.length === 1 ? "" : "s"} matched. Each one flows downstream separately.`
           ) : (
@@ -234,7 +262,7 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
           )
         }
       >
-        <div className="pick-row">
+        <div className={pickRow}>
           <TextInput
             mono
             value={data.record_path}
@@ -247,7 +275,7 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
 
       {parsed.ok ? (
         <>
-          <div className="tree-help">
+          <div className={treeHelp}>
             {target === "record"
               ? "Click an array (or one of its items) to use as the record list."
               : typeof target === "number"
@@ -262,16 +290,16 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
           />
         </>
       ) : (
-        parsed.error && <div className="notice error">{parsed.error}</div>
+        parsed.error && <div className={noticeError}>{parsed.error}</div>
       )}
-      {notice && <div className="notice warn">{notice}</div>}
+      {notice && <div className={noticeWarn}>{notice}</div>}
 
-      <div className="fields">
-        <div className="fields-head">
+      <div className={fieldsBox}>
+        <div className={fieldsHead}>
           <span>Field mapping</span>
           <button
             type="button"
-            className="link"
+            className={linkBtn}
             onClick={() =>
               set({
                 fields: [
@@ -289,21 +317,21 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
           </button>
         </div>
         {fields.map((f, i) => (
-          <div key={i} className={`map-row${target === i ? " picking" : ""}`}>
+          <div key={i} className={cx(mapRow, target === i && mapPicking)}>
             <input
-              className="mono"
+              className={mono}
               placeholder="OutputName"
               value={f.name}
               onChange={(e) => set({ fields: updateField(fields, i, { name: e.target.value }) })}
             />
             <input
-              className="mono"
+              className={mono}
               placeholder="$.address.city or {{var}}"
               value={f.selector}
               onChange={(e) => set({ fields: updateField(fields, i, { selector: e.target.value })})}
             />
             <PickButton active={target === i} onClick={() => setTarget(target === i ? null : i)} />
-            <label className="check mini" title="Keep all matches as a list">
+            <label className={checkMini} title="Keep all matches as a list">
               <input
                 type="checkbox"
                 checked={!!f.multiple}
@@ -311,15 +339,15 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
               />
               list
             </label>
-            <button type="button" className="icon" title="Remove" onClick={() => set({ fields: fields.filter((_, j) => j !== i) })}>
+            <button type="button" className={iconBtn} title="Remove" onClick={() => set({ fields: fields.filter((_, j) => j !== i) })}>
               ×
             </button>
-            {first && f.name && <div className="map-preview">{cell(preview[0]?.[f.name]) || <em>no value</em>}</div>}
+            {first && f.name && <div className={mapPreview}>{cell(preview[0]?.[f.name]) || <em>no value</em>}</div>}
           </div>
         ))}
         <button
           type="button"
-          className="ghost small"
+          className={ghostSmall}
           onClick={() => set({ fields: [...fields, { name: "", selector: "", selector_type: "jsonpath" }] })}
         >
           + Add field
@@ -337,7 +365,7 @@ function JsonParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
 
 function PickButton({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
-    <button type="button" className={`icon pick${active ? " active" : ""}`} title="Pick from the JSON tree" onClick={onClick}>
+    <button type="button" className={cx(iconBtn, active && "border-white bg-white text-black")} title="Pick from the JSON tree" onClick={onClick}>
       ◎
     </button>
   );
@@ -362,10 +390,10 @@ function HtmlParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
             : "One record per matched element, e.g. .store-card. Empty = one record per page."
         }
       >
-        <div className="pick-row">
+        <div className={pickRow}>
           <TextInput mono value={data.item_selector} placeholder=".store" onChange={(item_selector) => set({ item_selector })} />
           <select
-            className="narrow"
+            className={narrow}
             value={data.item_selector_type || "css"}
             onChange={(e) => set({ item_selector_type: e.target.value as "css" | "xpath" })}
           >
@@ -375,28 +403,28 @@ function HtmlParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
         </div>
       </Field>
 
-      <div className="fields">
-        <div className="fields-head">
+      <div className={fieldsBox}>
+        <div className={fieldsHead}>
           <span>Output fields</span>
-          <span className="hint">each becomes {"{{name}}"} downstream</span>
+          <span className={hint}>each becomes {"{{name}}"} downstream</span>
         </div>
         {fields.map((f, i) => {
           const patch = (p: Partial<ExtractField>) => set({ fields: updateField(fields, i, p) });
           return (
-            <div key={i} className="html-field">
-              <div className="html-field-top">
-                <input className="mono" placeholder="store_id" value={f.name} onChange={(e) => patch({ name: e.target.value })} />
+            <div key={i} className={htmlField}>
+              <div className={htmlTop}>
+                <input className={mono} placeholder="store_id" value={f.name} onChange={(e) => patch({ name: e.target.value })} />
                 <input
-                  className="mono"
+                  className={mono}
                   placeholder={f.selector_type === "xpath" ? "./@data-store-id" : ".name"}
                   value={f.selector}
                   onChange={(e) => patch({ selector: e.target.value })}
                 />
-                <button type="button" className="icon" title="Remove" onClick={() => set({ fields: fields.filter((_, j) => j !== i) })}>
+                <button type="button" className={iconBtn} title="Remove" onClick={() => set({ fields: fields.filter((_, j) => j !== i) })}>
                   ×
                 </button>
               </div>
-              <div className="html-field-opts">
+              <div className={htmlOpts}>
                 <select value={f.selector_type} onChange={(e) => patch({ selector_type: e.target.value as "css" | "xpath" })}>
                   <option value="css">CSS</option>
                   <option value="xpath">XPath</option>
@@ -407,30 +435,30 @@ function HtmlParser({ data, set, vars, sampleText, sampleScope }: FormProps & { 
                   <option value="html">html</option>
                 </select>
                 {f.extract === "attr" && (
-                  <input className="mono" placeholder="href" value={f.attr || ""} onChange={(e) => patch({ attr: e.target.value })} />
+                  <input className={mono} placeholder="href" value={f.attr || ""} onChange={(e) => patch({ attr: e.target.value })} />
                 )}
-                <input className="mono" placeholder="regex" value={f.regex || ""} onChange={(e) => patch({ regex: e.target.value || null })} />
-                <label className="check mini">
+                <input className={mono} placeholder="regex" value={f.regex || ""} onChange={(e) => patch({ regex: e.target.value || null })} />
+                <label className={checkMini}>
                   <input type="checkbox" checked={!!f.multiple} onChange={(e) => patch({ multiple: e.target.checked })} />
                   list
                 </label>
               </div>
               {preview && f.name && (
-                <div className="map-preview">{cell(preview.rows[0]?.[f.name]) || <em>no value in first record</em>}</div>
+                <div className={mapPreview}>{cell(preview.rows[0]?.[f.name]) || <em>no value in first record</em>}</div>
               )}
             </div>
           );
         })}
         <button
           type="button"
-          className="ghost small"
+          className={ghostSmall}
           onClick={() => set({ fields: [...fields, { name: "", selector: "", selector_type: "css", extract: "text" }] })}
         >
           + Add field
         </button>
       </div>
       <VariableChips variables={vars} title="Upstream variables (usable in {{templates}})" />
-      {preview?.error && <div className="notice error">{preview.error}</div>}
+      {preview?.error && <div className={noticeError}>{preview.error}</div>}
       {preview && !preview.error && (
         <Section title={`Preview · ${preview.count} record${preview.count === 1 ? "" : "s"} in sample`}>
           <RecordsTable rows={preview.rows} />

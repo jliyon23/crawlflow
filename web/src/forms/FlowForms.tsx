@@ -1,12 +1,13 @@
 import type { NodeData } from "../model/types";
 import { Field, NumberInput, RunInfo, Section, TextInput, VariableChips } from "./common";
 import type { FormProps } from "./types";
+import { cx, ghostSmall, grid2, hint, mono, narrow, noticeInfo, pickRow, rowButtons, segmentBtn, segmentOn, segmented } from "../ui";
 
 export function PaginationForm({ data, set, report }: FormProps) {
   const kind = data.pagination_type || "next_link";
   return (
     <>
-      <div className="notice info">
+      <div className={noticeInfo}>
         Connect this node <strong>after</strong> a Request, then drag its <code>next</code> handle back to that Request
         to form the loop.
       </div>
@@ -20,10 +21,10 @@ export function PaginationForm({ data, set, report }: FormProps) {
       </Field>
 
       {kind === "next_link" && (
-        <div className="pick-row">
+        <div className={pickRow}>
           <TextInput mono value={data.next_selector} placeholder="a.next" onChange={(next_selector) => set({ next_selector })} />
           <select
-            className="narrow"
+            className={narrow}
             value={data.next_selector_type || "css"}
             onChange={(e) => set({ next_selector_type: e.target.value as "css" | "xpath" })}
           >
@@ -49,7 +50,7 @@ export function PaginationForm({ data, set, report }: FormProps) {
           >
             <TextInput mono value={data.page_var} placeholder="page" onChange={(page_var) => set({ page_var })} />
           </Field>
-          <div className="grid2">
+          <div className={grid2}>
             <Field label="Start">
               <NumberInput value={data.page_start ?? 1} onChange={(v) => set({ page_start: v ?? 1 })} />
             </Field>
@@ -80,10 +81,10 @@ export function PaginationForm({ data, set, report }: FormProps) {
           <NumberInput allowEmpty value={data.max_pages} onChange={(max_pages) => set({ max_pages })} />
         </Field>
         <Field label="Stop when this matches nothing" hint="e.g. $.data.stores[*] or .store">
-          <div className="pick-row">
+          <div className={pickRow}>
             <TextInput mono value={data.stop_selector} onChange={(stop_selector) => set({ stop_selector })} />
             <select
-              className="narrow"
+              className={narrow}
               value={data.stop_selector_type || "css"}
               onChange={(e) => set({ stop_selector_type: e.target.value as NodeData["stop_selector_type"] })}
             >
@@ -102,7 +103,7 @@ export function PaginationForm({ data, set, report }: FormProps) {
 export function LoopForm({ data, set, vars, report }: FormProps) {
   return (
     <>
-      <p className="hint">
+      <p className={`mb-2.5 ${hint}`}>
         Emits one item per element of a list variable (e.g. a parser field marked <em>list</em>). Records from a Parser
         already flow one by one, so you only need this for list-valued fields.
       </p>
@@ -128,7 +129,7 @@ export function BranchForm({ data, set, vars, report }: FormProps) {
   return (
     <>
       <Field label="Variable">
-        <input list="branch-vars" className="mono" value={data.field || ""} onChange={(e) => set({ field: e.target.value })} />
+        <input list="branch-vars" className={mono} value={data.field || ""} onChange={(e) => set({ field: e.target.value })} />
         <datalist id="branch-vars">
           {vars.map((v) => (
             <option key={v.name} value={v.name} />
@@ -150,7 +151,7 @@ export function BranchForm({ data, set, vars, report }: FormProps) {
           <TextInput mono value={data.value} onChange={(value) => set({ value })} />
         </Field>
       )}
-      <p className="hint">
+      <p className={`mb-2.5 ${hint}`}>
         Items go out the <code>true</code> or <code>false</code> handle.
       </p>
       <RunInfo report={report} />
@@ -161,7 +162,7 @@ export function BranchForm({ data, set, vars, report }: FormProps) {
 export function FollowForm({ data, set, report }: FormProps) {
   return (
     <>
-      <p className="hint">
+      <p className={`mb-2.5 ${hint}`}>
         Emits every matching link as <code>{"{{link}}"}</code>. Connect to a Request with an empty URL to fetch them.
       </p>
       <Field label="Link selector (CSS)">
@@ -192,9 +193,9 @@ export function OutputForm({ data, set, vars, report }: FormProps) {
   };
   return (
     <>
-      <div className="segmented">
+      <div className={segmented}>
         {(["csv", "json", "jsonl"] as const).map((f) => (
-          <button key={f} type="button" className={format === f ? "active" : ""} onClick={() => setFormat(f)}>
+          <button key={f} type="button" className={cx(segmentBtn, format === f && segmentOn)} onClick={() => setFormat(f)}>
             {f.toUpperCase()}
           </button>
         ))}
@@ -216,16 +217,16 @@ export function OutputForm({ data, set, vars, report }: FormProps) {
           onChange={(e) => set({ columns: e.target.value.split("\n") })}
         />
       </Field>
-      <div className="row-buttons">
-        <button type="button" className="ghost small" onClick={() => set({ columns: vars.map((v) => v.name) })}>
+      <div className={rowButtons}>
+        <button type="button" className={ghostSmall} onClick={() => set({ columns: vars.map((v) => v.name) })}>
           Use all upstream variables
         </button>
-        <button type="button" className="ghost small" onClick={() => set({ columns: [] })}>
+        <button type="button" className={ghostSmall} onClick={() => set({ columns: [] })}>
           Clear
         </button>
       </div>
       <Field label="De-duplicate by (optional)">
-        <input list="out-vars" className="mono" value={data.dedupe_key || ""} onChange={(e) => set({ dedupe_key: e.target.value })} />
+        <input list="out-vars" className={mono} value={data.dedupe_key || ""} onChange={(e) => set({ dedupe_key: e.target.value })} />
         <datalist id="out-vars">
           {vars.map((v) => (
             <option key={v.name} value={v.name} />

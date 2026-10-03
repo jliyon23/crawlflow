@@ -1,6 +1,7 @@
 import { referencedVars, requestTemplates } from "../model/variables";
 import { Field, KeyValueEditor, Section, TextInput, UndefinedWarning, VariableChips } from "./common";
 import type { FormProps } from "./types";
+import { check, hint, methodUrl, snippet } from "../ui";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"];
 const BUILTINS = new Set(["url", "link"]);
@@ -14,7 +15,7 @@ export default function RequestForm({ data, set, vars, report }: FormProps) {
   return (
     <>
       <VariableChips variables={vars} />
-      <div className="method-url">
+      <div className={methodUrl}>
         <select value={(data.method || "GET").toUpperCase()} onChange={(e) => set({ method: e.target.value })}>
           {METHODS.map((m) => (
             <option key={m}>{m}</option>
@@ -27,7 +28,7 @@ export default function RequestForm({ data, set, vars, report }: FormProps) {
           onChange={(url) => set({ url })}
         />
       </div>
-      <p className="hint">
+      <p className={`mb-2.5 ${hint}`}>
         {urlEmpty
           ? "Empty URL uses {{url}} from upstream (Input URL, Follow links, or pagination)."
           : "Relative URLs (/api/...) resolve against the previous response's URL."}
@@ -68,7 +69,7 @@ export default function RequestForm({ data, set, vars, report }: FormProps) {
         <Field label="Proxy" hint="Overrides the workflow proxy. Supports {{variables}}.">
           <TextInput mono value={data.proxy} placeholder="http://user:pass@host:port" onChange={(proxy) => set({ proxy })} />
         </Field>
-        <label className="check">
+        <label className={check}>
           <input type="checkbox" checked={!!data.dont_filter} onChange={(e) => set({ dont_filter: e.target.checked })} />
           Allow duplicate requests (skip de-duplication)
         </label>
@@ -76,7 +77,7 @@ export default function RequestForm({ data, set, vars, report }: FormProps) {
 
       {report?.request && (
         <Section title="Last request sent" open={false}>
-          <pre className="snippet">
+          <pre className={snippet}>
             {report.request.method} {report.request.url}
             {Object.entries(report.request.headers || {}).map(([k, v]) => `\n${k}: ${v}`)}
             {report.request.body ? `\n\n${report.request.body}` : ""}
@@ -85,7 +86,7 @@ export default function RequestForm({ data, set, vars, report }: FormProps) {
       )}
       {report?.response && (
         <Section title={`Last response · ${report.response.status} · ${report.response.content_type || "?"}`} open={false}>
-          <pre className="snippet">{report.response.body.slice(0, 4000)}</pre>
+          <pre className={snippet}>{report.response.body.slice(0, 4000)}</pre>
         </Section>
       )}
     </>
