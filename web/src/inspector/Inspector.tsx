@@ -1,13 +1,13 @@
 import type { ComponentType } from "react";
-import type { CrawlSettings, KeyValues, NodeData, NodeReport, NodeType, ResponseSample } from "./types";
-import type { Variable } from "./variables";
-import { Field, KeyValueEditor, NumberInput, RunInfo, Section } from "./forms/common";
-import InputForm from "./forms/InputForm";
-import RequestForm from "./forms/RequestForm";
-import ParserForm from "./forms/ParserForm";
-import { BranchForm, FollowForm, LoopForm, OutputForm, PaginationForm } from "./forms/FlowForms";
-import type { FormProps } from "./forms/types";
-import { COLORS } from "./nodes";
+import type { CrawlSettings, KeyValues, NodeData, NodeReport, NodeType, ResponseSample } from "../model/types";
+import type { Variable } from "../model/variables";
+import { Field, KeyValueEditor, NumberInput, RunInfo, Section } from "../forms/common";
+import InputForm from "../forms/InputForm";
+import RequestForm from "../forms/RequestForm";
+import ParserForm from "../forms/ParserForm";
+import { BranchForm, FollowForm, LoopForm, OutputForm, PaginationForm } from "../forms/FlowForms";
+import type { FormProps } from "../forms/types";
+import { COLORS } from "../canvas/nodes";
 
 type SelectedNode = {
   id: string;

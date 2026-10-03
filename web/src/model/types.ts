@@ -191,15 +191,15 @@ export const defaultSettings = (): CrawlSettings => ({
   dont_filter: false,
 });
 
-export const PALETTE: Array<{ type: NodeType; title: string; hint: string }> = [
-  { type: "input", title: "Input", hint: "URL, list, table, range" },
-  { type: "request", title: "Request", hint: "GET / POST with {{vars}}" },
-  { type: "parser", title: "Parser", hint: "HTML or JSON → fields" },
-  { type: "pagination", title: "Pagination", hint: "Next link, page, cursor" },
-  { type: "loop", title: "Loop", hint: "Iterate a list variable" },
-  { type: "branch", title: "Branch", hint: "If / else filter" },
-  { type: "follow", title: "Follow links", hint: "Link extractor" },
-  { type: "output", title: "Output", hint: "CSV / JSON / JSONL" },
+export const PALETTE: Array<{ type: NodeType; title: string; hint: string; category: string }> = [
+  { type: "input", title: "Input", hint: "URL, list, table, range", category: "Sources" },
+  { type: "request", title: "Request", hint: "GET / POST with {{vars}}", category: "Fetch" },
+  { type: "follow", title: "Follow links", hint: "Link extractor", category: "Fetch" },
+  { type: "pagination", title: "Pagination", hint: "Next link, page, cursor", category: "Fetch" },
+  { type: "parser", title: "Parser", hint: "HTML or JSON → fields", category: "Transform" },
+  { type: "loop", title: "Loop", hint: "Iterate a list variable", category: "Transform" },
+  { type: "branch", title: "Branch", hint: "If / else filter", category: "Transform" },
+  { type: "output", title: "Output", hint: "CSV / JSON / JSONL", category: "Export" },
 ];
 
 export function defaultData(type: NodeType): NodeData {

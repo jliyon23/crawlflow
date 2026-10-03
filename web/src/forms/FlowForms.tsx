@@ -1,4 +1,4 @@
-import type { NodeData } from "../types";
+import type { NodeData } from "../model/types";
 import { Field, NumberInput, RunInfo, Section, TextInput, VariableChips } from "./common";
 import type { FormProps } from "./types";
 

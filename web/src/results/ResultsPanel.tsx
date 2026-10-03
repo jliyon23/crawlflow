@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { RunReport } from "./types";
-import { RecordsTable } from "./forms/common";
+import type { RunReport } from "../model/types";
+import { RecordsTable } from "../forms/common";
 
 type Props = {
   report: RunReport | null;

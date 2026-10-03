@@ -1,5 +1,5 @@
-import type { NodeData, NodeReport, ResponseSample } from "../types";
-import type { Variable } from "../variables";
+import type { NodeData, NodeReport, ResponseSample } from "../model/types";
+import type { Variable } from "../model/variables";
 
 export type FormProps = {
   nodeId: string;

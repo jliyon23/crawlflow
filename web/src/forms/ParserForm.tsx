@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import JsonTree from "../JsonTree";
-import { finish, previewHtml, renderPreview } from "../htmlPreview";
+import JsonTree from "../preview/JsonTree";
+import { finish, previewHtml, renderPreview } from "../preview/htmlPreview";
 import {
   asRecordSelector,
   findWithPaths,
@@ -9,8 +9,8 @@ import {
   tryFind,
   type Match,
   type Segment,
-} from "../jsonpath";
-import type { ExtractField, NodeData } from "../types";
+} from "../preview/jsonpath";
+import type { ExtractField, NodeData } from "../model/types";
 import { Field, RecordsTable, RunInfo, Section, TextInput, VariableChips, cell } from "./common";
 import type { FormProps } from "./types";
 

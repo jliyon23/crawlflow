@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import type { KeyValues, NodeReport } from "../types";
-import type { Variable } from "../variables";
+import type { KeyValues, NodeReport } from "../model/types";
+import type { Variable } from "../model/variables";
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {
   return (

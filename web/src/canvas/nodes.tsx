@@ -1,8 +1,30 @@
 import { createContext, useContext } from "react";
 import type { NodeTypes } from "@xyflow/react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { NodeData, NodeReport, NodeType } from "./types";
-import { providedVars } from "./variables";
+import {
+  Braces,
+  Download,
+  GitBranch,
+  Globe,
+  Inbox,
+  Link2,
+  ListOrdered,
+  Repeat,
+  type LucideIcon,
+} from "lucide-react";
+import type { NodeData, NodeReport, NodeType } from "../model/types";
+import { providedVars } from "../model/variables";
+
+export const ICONS: Record<NodeType, LucideIcon> = {
+  input: Inbox,
+  request: Globe,
+  parser: Braces,
+  pagination: ListOrdered,
+  loop: Repeat,
+  follow: Link2,
+  branch: GitBranch,
+  output: Download,
+};
 
 export const COLORS: Record<NodeType, string> = {
   input: "#3dd68c",
@@ -27,6 +49,10 @@ export function CrawlNode({ id, data, type, selected }: NodeProps) {
       {t !== "input" && <Handle type="target" position={Position.Left} />}
       <div className="cf-node-head">
         <span className="cf-node-kind" style={{ color: COLORS[t] }}>
+          {(() => {
+            const Icon = ICONS[t];
+            return <Icon size={12} strokeWidth={2.4} aria-hidden />;
+          })()}
           {t === "parser" ? `${d.parser_type || "html"} parser` : t}
         </span>
         {report && (

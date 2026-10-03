@@ -1,4 +1,4 @@
-import { tableHeader } from "../variables";
+import { tableHeader } from "../model/variables";
 import { Field, KeyValueEditor, NumberInput, Section, TextInput } from "./common";
 import type { FormProps } from "./types";
 

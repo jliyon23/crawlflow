@@ -1,4 +1,4 @@
-import { referencedVars, requestTemplates } from "../variables";
+import { referencedVars, requestTemplates } from "../model/variables";
 import { Field, KeyValueEditor, Section, TextInput, UndefinedWarning, VariableChips } from "./common";
 import type { FormProps } from "./types";
 

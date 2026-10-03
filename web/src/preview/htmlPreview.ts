@@ -1,5 +1,5 @@
-import type { ExtractField, NodeData } from "./types";
-import { TEMPLATE_RE } from "./variables";
+import type { ExtractField, NodeData } from "../model/types";
+import { TEMPLATE_RE } from "../model/variables";
 
 type Row = Record<string, unknown>;
 
