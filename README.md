@@ -1,5 +1,9 @@
 # Crawlflow
 
+<p align="center">
+  <img src="web/src/assets/images/logo/Crawlflow-nobg.png" alt="Crawlflow" width="280" />
+</p>
+
 n8n-style **visual crawler workflows**, executed by **Scrapy**.
 
 You draw a graph (Start → Request → Extract → Pagination / Follow → Store). Crawlflow validates that graph, then runs it as a Scrapy spider: concurrent downloads, robots.txt, cookies, headers, retries, delays, proxies.
