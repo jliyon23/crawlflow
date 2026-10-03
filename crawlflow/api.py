@@ -131,20 +131,19 @@ def run(body: RunBody):
         s = wf.settings
         s.max_pages = min(s.max_pages or PREVIEW_PAGES, PREVIEW_PAGES)
         s.max_items = min(s.max_items or PREVIEW_ITEMS, PREVIEW_ITEMS)
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
         for node in wf.nodes:
             if node.type == "output":
-                node.data.path = f"output/preview/{node.id}.{node.data.format}"
-
-    with tempfile.TemporaryDirectory() as tmp:
-        wf_path = Path(tmp) / "workflow.json"
-        report_path = Path(tmp) / "report.json"
+                name = Path(node.data.path or f"{node.id}.{node.data.format}").name
+                node.data.path = str(tmp_path / name)
+        wf_path = tmp_path / "workflow.json"
+        report_path = tmp_path / "report.json"
         wf_path.write_text(json.dumps(wf.model_dump(by_alias=True)))
         cmd = [sys.executable, "-m", "crawlflow", "run", str(wf_path), "--report", str(report_path)]
-        if body.output and not body.preview:
-            cmd += ["-o", body.output]
         try:
             result = subprocess.run(
-                cmd, cwd=str(ROOT), capture_output=True, text=True, timeout=120 if body.preview else 600, check=False
+                cmd, cwd=str(tmp_path), capture_output=True, text=True, timeout=120 if body.preview else 600, check=False
             )
         except subprocess.TimeoutExpired as exc:
             raise HTTPException(504, f"Run timed out after {exc.timeout}s") from exc
@@ -152,6 +151,9 @@ def run(body: RunBody):
         if result.returncode != 0 or not report_path.exists():
             raise HTTPException(status_code=500, detail=log or "run failed")
         report = json.loads(report_path.read_text())
+        for entry in report.get("outputs", {}).values():
+            entry["filename"] = Path(entry.get("filename") or entry.get("path") or "output").name
+            entry["path"] = entry["filename"]
 
     outputs = report.get("outputs", {})
     return {

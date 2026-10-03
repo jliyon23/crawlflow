@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
 from pathlib import Path
 from typing import Any
@@ -54,25 +55,29 @@ def _cell(value: Any) -> Any:
     return value
 
 
-def write_output(node: FlowNode, records: list[dict[str, Any]], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+def render_output(node: FlowNode, records: list[dict[str, Any]]) -> str:
     fmt = node.data.format
     if fmt == "json":
-        path.write_text(json.dumps(records, ensure_ascii=False, indent=2))
-    elif fmt == "csv":
+        return json.dumps(records, ensure_ascii=False, indent=2)
+    if fmt == "csv":
         columns: list[str] = [c.partition("=")[0].strip() for c in node.data.columns if c.strip()]
         if not columns:
             for record in records:
-                columns.extend(k for k in record if k not in columns)
-        with path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
-            writer.writeheader()
-            for record in records:
-                writer.writerow({k: _cell(record.get(k)) for k in columns})
-    else:
-        with path.open("w", encoding="utf-8") as handle:
-            for record in records:
-                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                columns.extend(k for k in record if not str(k).startswith("_cf") and k not in columns)
+        buffer = io.StringIO()
+        writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction="ignore", lineterminator="\n")
+        writer.writeheader()
+        for record in records:
+            writer.writerow({k: _cell(record.get(k)) for k in columns})
+        return buffer.getvalue()
+    return "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records)
+
+
+def write_output(node: FlowNode, records: list[dict[str, Any]], path: Path) -> str:
+    text = render_output(node, records)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return text
 
 
 class OutputPipeline:
@@ -121,8 +126,9 @@ def run_workflow(
 
     results = OutputPipeline.results
     nodes = {n.id: n for n in workflow.nodes}
+    files: dict[str, str] = {}
     for node_id, path in paths.items():
-        write_output(nodes[node_id], results.get(node_id, []), path)
+        files[node_id] = write_output(nodes[node_id], results.get(node_id, []), path)
 
     if report_path:
         report = {
@@ -130,10 +136,12 @@ def run_workflow(
             "nodes": state.get("report", {}),
             "outputs": {
                 node_id: {
-                    "path": str(path),
+                    "path": path.name,
+                    "filename": path.name,
                     "format": nodes[node_id].data.format,
                     "count": len(results.get(node_id, [])),
                     "items": results.get(node_id, [])[:REPORT_ITEMS],
+                    "content": files.get(node_id, ""),
                 }
                 for node_id, path in paths.items()
             },

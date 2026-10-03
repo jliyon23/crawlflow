@@ -154,6 +154,8 @@ export type NodeReport = {
 
 export type OutputReport = {
   path: string;
+  filename?: string;
+  content?: string;
   format: string;
   count: number;
   items: Record<string, unknown>[];

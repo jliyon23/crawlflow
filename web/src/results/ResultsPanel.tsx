@@ -1,6 +1,30 @@
 import { useEffect, useState } from "react";
-import type { RunReport } from "../model/types";
+import type { OutputReport, RunReport } from "../model/types";
 import { RecordsTable } from "../forms/common";
+
+function serializeItems(output: OutputReport): string {
+  const rows = output.items || [];
+  if (output.format === "json") return JSON.stringify(rows, null, 2);
+  if (output.format === "csv") {
+    const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+    const cell = (value: unknown) => {
+      const text = value == null ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    return [columns.join(","), ...rows.map((row) => columns.map((key) => cell(row[key])).join(","))].join("\n");
+  }
+  return rows.map((row) => JSON.stringify(row)).join("\n");
+}
+
+function downloadOutput(output: OutputReport, label: string) {
+  const filename = output.filename || output.path || `${label}.${output.format || "json"}`;
+  const blob = new Blob([output.content || serializeItems(output)], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 type Props = {
   report: RunReport | null;
@@ -63,9 +87,14 @@ export default function ResultsPanel({ report, error, labels, onClose }: Props) 
           ))}
         {current && (
           <>
-            <div className="hint">
-              {current.count} records written to <code>{current.path}</code>
-              {current.count > current.items.length ? ` · showing first ${current.items.length}` : ""}
+            <div className="hint results-file">
+              <span>
+                {current.count} records
+                {current.count > current.items.length ? ` · showing first ${current.items.length}` : ""}
+              </span>
+              <button type="button" className="secondary" onClick={() => downloadOutput(current, labels[tab] || tab)}>
+                Download {current.filename || current.path}
+              </button>
             </div>
             <RecordsTable rows={current.items} max={200} />
           </>
