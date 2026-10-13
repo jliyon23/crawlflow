@@ -98,6 +98,43 @@ export function SettingsForm({
         <p className={`mb-2.5 ${hint}`}>Constants available everywhere, e.g. {"{{base_url}}"} or {"{{api_key}}"}.</p>
         <KeyValueEditor value={globals} onChange={onGlobals} valuePlaceholder="value" />
       </Section>
+      <Section title="Request engine">
+        <Field label="Engine" hint="Standard uses the normal crawler. TLS impersonates a browser client when a site blocks that.">
+          <select value={settings.engine || "standard"} onChange={(e) => set("engine", e.target.value as CrawlSettings["engine"])}>
+            <option value="standard">Standard</option>
+            <option value="tls">TLS</option>
+          </select>
+        </Field>
+        {settings.engine === "tls" && (
+          <>
+            <div className={grid2}>
+              <Field label="Impersonate">
+                <select value={settings.tls_impersonate || "chrome"} onChange={(e) => set("tls_impersonate", e.target.value as CrawlSettings["tls_impersonate"])}>
+                  <option value="chrome">Chrome</option>
+                  <option value="safari">Safari</option>
+                  <option value="firefox">Firefox</option>
+                  <option value="edge">Edge</option>
+                </select>
+              </Field>
+              <Field label="HTTP version">
+                <select value={settings.tls_http_version || "h2"} onChange={(e) => set("tls_http_version", e.target.value as CrawlSettings["tls_http_version"])}>
+                  <option value="h2">HTTP/2</option>
+                  <option value="h1">HTTP/1</option>
+                </select>
+              </Field>
+            </div>
+            <label className={check}>
+              <input type="checkbox" checked={settings.tls_default_headers !== false} onChange={(e) => set("tls_default_headers", e.target.checked)} />
+              Send the browser's default headers
+            </label>
+            <label className={check}>
+              <input type="checkbox" checked={settings.tls_verify !== false} onChange={(e) => set("tls_verify", e.target.checked)} />
+              Verify certificates
+            </label>
+            <p className={hint}>Autothrottle and HTTP cache apply to Standard only.</p>
+          </>
+        )}
+      </Section>
       <Section title="HTTP defaults">
         <Field label="User-Agent">
           <input value={settings.user_agent} onChange={(e) => set("user_agent", e.target.value)} />

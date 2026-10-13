@@ -89,6 +89,11 @@ export type NodeData = {
 };
 
 export type CrawlSettings = {
+  engine: "standard" | "tls";
+  tls_impersonate: "chrome" | "safari" | "firefox" | "edge";
+  tls_default_headers: boolean;
+  tls_http_version: "h2" | "h1";
+  tls_verify: boolean;
   user_agent: string;
   headers: KeyValues;
   cookies: KeyValues;
@@ -181,6 +186,11 @@ export type JobSnapshot = RunReport & {
 };
 
 export const defaultSettings = (): CrawlSettings => ({
+  engine: "standard",
+  tls_impersonate: "chrome",
+  tls_default_headers: true,
+  tls_http_version: "h2",
+  tls_verify: true,
   user_agent: "Crawlflow/0.2 (+local research crawler)",
   headers: {},
   cookies: {},

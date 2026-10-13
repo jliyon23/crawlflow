@@ -136,6 +136,11 @@ class FlowEdge(BaseModel):
 
 
 class CrawlSettings(BaseModel):
+    engine: Literal["standard", "tls"] = "standard"
+    tls_impersonate: Literal["chrome", "safari", "firefox", "edge"] = "chrome"
+    tls_default_headers: bool = True
+    tls_http_version: Literal["h2", "h1"] = "h2"
+    tls_verify: bool = True
     user_agent: str = "Crawlflow/0.1 (+https://github.com/local/crawlflow)"
     headers: dict[str, str] = Field(default_factory=dict)
     cookies: dict[str, str] = Field(default_factory=dict)

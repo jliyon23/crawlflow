@@ -106,14 +106,51 @@ def _write_status(path: Path, pages: int, items: int) -> None:
     path.write_text(json.dumps({"pages": pages, "items": items}))
 
 
+def _finish(
+    workflow: Workflow,
+    paths: dict[str, Path],
+    results: dict[str, list[dict[str, Any]]],
+    report_nodes: dict,
+    reason: str | None,
+    report_path: str | None,
+) -> dict[str, list[dict[str, Any]]]:
+    nodes = {n.id: n for n in workflow.nodes}
+    files: dict[str, str] = {}
+    for node_id, path in paths.items():
+        files[node_id] = write_output(nodes[node_id], results.get(node_id, []), path)
+    if report_path:
+        report = {
+            "reason": reason,
+            "nodes": report_nodes,
+            "outputs": {
+                node_id: {
+                    "path": path.name,
+                    "filename": path.name,
+                    "format": nodes[node_id].data.format,
+                    "count": len(results.get(node_id, [])),
+                    "items": results.get(node_id, [])[:REPORT_ITEMS],
+                    "content": files.get(node_id, ""),
+                }
+                for node_id, path in paths.items()
+            },
+        }
+        Path(report_path).write_text(json.dumps(report, ensure_ascii=False, default=str))
+    return results
+
+
 def run_workflow(
     workflow: Workflow,
     output_path: str | None = None,
     report_path: str | None = None,
     status_path: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
-    OutputPipeline.results = {}
     paths = output_paths(workflow, output_path)
+    if workflow.settings.engine == "tls":
+        from crawlflow.engine.tls_engine import run_tls
+
+        results, report_nodes, reason = run_tls(workflow, status_path)
+        return _finish(workflow, paths, results, report_nodes, reason, report_path)
+    OutputPipeline.results = {}
     settings = get_project_settings()
     for key, value in scrapy_settings(workflow).items():
         settings.set(key, value, priority="cmdline")
@@ -145,27 +182,4 @@ def run_workflow(
     process.crawl(crawler, workflow=workflow)
     process.start()
 
-    results = OutputPipeline.results
-    nodes = {n.id: n for n in workflow.nodes}
-    files: dict[str, str] = {}
-    for node_id, path in paths.items():
-        files[node_id] = write_output(nodes[node_id], results.get(node_id, []), path)
-
-    if report_path:
-        report = {
-            "reason": state.get("reason"),
-            "nodes": state.get("report", {}),
-            "outputs": {
-                node_id: {
-                    "path": path.name,
-                    "filename": path.name,
-                    "format": nodes[node_id].data.format,
-                    "count": len(results.get(node_id, [])),
-                    "items": results.get(node_id, [])[:REPORT_ITEMS],
-                    "content": files.get(node_id, ""),
-                }
-                for node_id, path in paths.items()
-            },
-        }
-        Path(report_path).write_text(json.dumps(report, ensure_ascii=False, default=str))
-    return results
+    return _finish(workflow, paths, OutputPipeline.results, state.get("report", {}), state.get("reason"), report_path)

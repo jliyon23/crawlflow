@@ -23,6 +23,7 @@ from parsel import Selector
 from scrapy.http import Response, TextResponse
 
 from crawlflow.engine import jsonpath
+from crawlflow.engine.http import Fetch, Page
 from crawlflow.models.workflow import ExtractField, FlowEdge, FlowNode, Workflow
 from crawlflow.engine.templating import is_missing, is_template, lookup, render, render_map
 
@@ -30,7 +31,8 @@ SAMPLE_LIMIT = 5
 RESPONSE_SAMPLE_BYTES = 300_000
 DEFAULT_HANDLES = {"pagination": "next", "branch": "true"}
 
-Emission = Any  # scrapy.Request | OutputItem | tuple[str | None, dict]
+Emission = Any  # Fetch | OutputItem | tuple[str | None, dict]
+PageLike = Response | Page
 
 
 class OutputItem(dict):
@@ -81,7 +83,17 @@ def parse_table(text: str) -> list[dict[str, str]]:
 # ---------------------------------------------------------------- parsing
 
 
-def _sel(target: Selector | Response, selector: str, kind: str):
+def _header_value(response: PageLike, name: str) -> str:
+    raw = response.headers.get(name) or response.headers.get(name.lower()) or ""
+    if isinstance(raw, (bytes, bytearray)):
+        return raw.decode("latin-1")
+    if isinstance(raw, list) and raw:
+        raw = raw[0]
+        return raw.decode("latin-1") if isinstance(raw, (bytes, bytearray)) else str(raw)
+    return str(raw)
+
+
+def _sel(target: Selector | Response | Page, selector: str, kind: str):
     return target.xpath(selector) if kind == "xpath" else target.css(selector)
 
 
@@ -137,7 +149,7 @@ def extract_json_field(record: Any, field: ExtractField, scope: dict[str, Any]) 
 def load_json(raw: Any) -> Any:
     if isinstance(raw, (dict, list)):
         return raw
-    text = raw.text if isinstance(raw, TextResponse) else raw.decode() if isinstance(raw, bytes) else str(raw)
+    text = raw.text if isinstance(raw, (TextResponse, Page)) else raw.decode() if isinstance(raw, bytes) else str(raw)
     text = text.strip()
     if text.startswith(")]}'"):
         text = text.split("\n", 1)[-1]
@@ -150,7 +162,7 @@ def load_json(raw: Any) -> Any:
         raise ValueError(f"Response is not valid JSON ({exc.msg} at char {exc.pos})") from exc
 
 
-def parse_records(node: FlowNode, ctx: dict[str, Any], response: Response | None) -> list[dict[str, Any]]:
+def parse_records(node: FlowNode, ctx: dict[str, Any], response: PageLike | None) -> list[dict[str, Any]]:
     d = node.data
     if d.source:
         raw = lookup(ctx, d.source)
@@ -175,8 +187,8 @@ def parse_records(node: FlowNode, ctx: dict[str, Any], response: Response | None
                 row = dict(record)
             rows.append(row)
     else:
-        if isinstance(raw, Response):
-            doc: Selector | Response = raw
+        if isinstance(raw, (Response, Page)):
+            doc: Selector | Response | Page = raw
         else:
             doc = Selector(text=str(raw), base_url=ctx.get("_cf_base", ""))
         blocks = _sel(doc, d.item_selector, d.item_selector_type) if d.item_selector else [doc]
@@ -189,7 +201,7 @@ def parse_records(node: FlowNode, ctx: dict[str, Any], response: Response | None
     return rows
 
 
-def extract_links(response: Response, node: FlowNode) -> list[str]:
+def extract_links(response: PageLike, node: FlowNode) -> list[str]:
     data = node.data
     hrefs: list[str] = []
     for el in response.css(data.link_selector or "a"):
@@ -308,7 +320,7 @@ class WorkflowSpider(scrapy.Spider):
         if kind == "errors":
             self.logger.error("[%s] %s", node_id, message)
 
-    def _record_response(self, node_id: str, response: Response, doc: Any = None) -> None:
+    def _record_response(self, node_id: str, response: PageLike, doc: Any = None) -> None:
         entry = self.report[node_id]
         if "response" in entry:
             return
@@ -316,8 +328,8 @@ class WorkflowSpider(scrapy.Spider):
             body = doc if isinstance(doc, str) else json.dumps(doc, ensure_ascii=False)
             content_type = "application/json" if not isinstance(doc, str) else "text/plain"
         else:
-            body = response.text if isinstance(response, TextResponse) else ""
-            content_type = response.headers.get("Content-Type", b"").decode("latin-1")
+            body = response.text if isinstance(response, (TextResponse, Page)) else ""
+            content_type = _header_value(response, "Content-Type")
         entry["response"] = {
             "url": response.url,
             "status": response.status,
@@ -328,18 +340,41 @@ class WorkflowSpider(scrapy.Spider):
 
     # -- graph traversal
 
+    def as_scrapy(self, fetch: Fetch) -> scrapy.Request:
+        meta: dict[str, Any] = {"cf_node": fetch.node_id, "cf_ctx": fetch.ctx, "cookiejar": 1, "depth": fetch.depth}
+        if fetch.proxy:
+            meta["proxy"] = fetch.proxy
+        return scrapy.Request(
+            fetch.url,
+            method=fetch.method,
+            headers=fetch.headers or None,
+            cookies=fetch.cookies or None,
+            body=fetch.body,
+            callback=self.parse,
+            errback=self._errback,
+            dont_filter=fetch.dont_filter,
+            meta=meta,
+        )
+
+    def _schedule(self, item: Emission) -> Emission:
+        return self.as_scrapy(item) if isinstance(item, Fetch) else item
+
     async def start(self):
         for node in self.workflow.nodes:
             if node.type == "input":
                 for item in self._enter(node, {}, None):
-                    yield item
+                    yield self._schedule(item)
 
     def parse(self, response: Response, **kwargs: Any):
-        node = self.nodes[response.meta["cf_node"]]
+        yield from (self._schedule(item) for item in self.continue_after(response.meta["cf_node"], response.meta.get("cf_ctx", {}), response))
+
+    def continue_after(self, node_id: str, ctx: dict[str, Any], response: PageLike):
+        node = self.nodes[node_id]
         self._record_response(node.id, response)
         self.report[node.id]["out"] += 1
-        ctx = {**response.meta.get("cf_ctx", {}), "_cf_base": response.url, "_cf_status": response.status}
-        yield from self._emit(node, None, ctx, response)
+        parent_depth = int(ctx.get("_cf_depth") or 0)
+        merged = {**ctx, "_cf_base": response.url, "_cf_status": response.status, "_cf_depth": parent_depth + 1}
+        yield from self._emit(node, None, merged, response)
 
     def _errback(self, failure):
         request = failure.request
@@ -349,7 +384,7 @@ class WorkflowSpider(scrapy.Spider):
             reason = f"HTTP {status}" if status else failure.getErrorMessage() or failure.type.__name__
             self._note(node_id, "errors", f"{request.method} {request.url}: {reason}")
 
-    def _enter(self, node: FlowNode, ctx: dict[str, Any], response: Response | None):
+    def _enter(self, node: FlowNode, ctx: dict[str, Any], response: PageLike | None):
         entry = self.report[node.id]
         entry["in"] += 1
         try:
@@ -358,13 +393,13 @@ class WorkflowSpider(scrapy.Spider):
             self._note(node.id, "errors", f"{type(exc).__name__}: {exc}")
             return
         for result in results:
-            if isinstance(result, (scrapy.Request, OutputItem)):
+            if isinstance(result, (Fetch, OutputItem)):
                 yield result
             else:
                 handle, out_ctx = result
                 yield from self._emit(node, handle, out_ctx, response)
 
-    def _emit(self, node: FlowNode, handle: str | None, ctx: dict[str, Any], response: Response | None):
+    def _emit(self, node: FlowNode, handle: str | None, ctx: dict[str, Any], response: PageLike | None):
         entry = self.report[node.id]
         if node.type != "request":
             entry["out"] += 1
@@ -418,23 +453,22 @@ class WorkflowSpider(scrapy.Spider):
         if missing:
             self._note(node.id, "warnings", f"Missing variable(s): {', '.join(sorted(missing))}")
 
-        meta: dict[str, Any] = {"cf_node": node.id, "cf_ctx": ctx, "cookiejar": 1}
-        proxy = render(d.proxy, ctx).strip() or (settings.proxy or "").strip()
-        if proxy:
-            meta["proxy"] = proxy
+        proxy = render(d.proxy, ctx).strip() or (settings.proxy or "").strip() or None
         entry = self.report[node.id]
         if "request" not in entry:
             entry["request"] = {"method": d.method.upper(), "url": url, "headers": headers, "body": body}
-        yield scrapy.Request(
-            url,
+        depth = int(ctx.get("_cf_depth") or 0)
+        yield Fetch(
             method=(d.method or "GET").upper(),
-            headers=headers or None,
-            cookies=cookies or None,
+            url=url,
+            headers=headers,
+            cookies=cookies,
             body=body,
-            callback=self.parse,
-            errback=self._errback,
+            proxy=proxy,
+            node_id=node.id,
+            ctx={**ctx, "_cf_depth": depth},
             dont_filter=settings.dont_filter or d.dont_filter,
-            meta=meta,
+            depth=depth,
         )
 
     def _on_parser(self, node: FlowNode, ctx: dict[str, Any], response):

@@ -4,7 +4,9 @@ from scrapy.http import HtmlResponse, Request, TextResponse
 
 from crawlflow.engine import jsonpath
 from crawlflow.engine.graph import check
+from crawlflow.engine.http import Fetch, Page
 from crawlflow.engine.spider import WorkflowSpider, input_contexts, parse_records
+from crawlflow.engine.tls_engine import session_options
 from crawlflow.engine.templating import render
 from crawlflow.models.workflow import FlowNode, workflow_from_obj
 
@@ -110,9 +112,11 @@ def test_downstream_request_iterates_parser_records():
     first = list(spider._enter(spider.nodes["in"], {}, None))
     assert [r.url for r in first] == ["https://shop.test/search"]
     response = HtmlResponse(
-        "https://shop.test/search", body=b'<ul><li id="7"></li><li id="9"></li></ul>', request=first[0], encoding="utf-8"
+        "https://shop.test/search",
+        body=b'<ul><li id="7"></li><li id="9"></li></ul>',
+        request=spider.as_scrapy(first[0]),
+        encoding="utf-8",
     )
-    response.meta.update(first[0].meta)
     detail = list(spider.parse(response))
     assert [r.url for r in detail] == ["https://shop.test/api/store/7", "https://shop.test/api/store/9"]
     assert json.loads(detail[1].body) == {"id": "9"}
@@ -138,12 +142,40 @@ def test_increment_pagination_stops_when_empty():
     assert req.url.endswith("page=1")
 
     def respond(request, payload):
-        response = TextResponse(request.url, body=json.dumps(payload).encode(), request=request, encoding="utf-8")
+        scrapy_request = request if hasattr(request, "meta") else spider.as_scrapy(request)
+        response = TextResponse(scrapy_request.url, body=json.dumps(payload).encode(), request=scrapy_request, encoding="utf-8")
         return list(spider.parse(response))
 
     (page2,) = respond(req, {"items": [1]})
     assert page2.url.endswith("page=2")
     assert respond(page2, {"items": []}) == []
+
+
+def test_tls_options_and_page_walk():
+    wf = _workflow(
+        [
+            {"id": "in", "type": "input", "data": {"input_mode": "single", "url": "https://shop.test/"}},
+            {"id": "req", "type": "request", "data": {"url": "{{url}}"}},
+            {"id": "parse", "type": "parser", "data": {"item_selector": "li", "fields": [{"name": "name", "selector": "text()", "selector_type": "xpath"}]}},
+            {"id": "out", "type": "output", "data": {"format": "jsonl"}},
+        ],
+        [
+            {"id": "a", "source": "in", "target": "req"},
+            {"id": "b", "source": "req", "target": "parse"},
+            {"id": "c", "source": "parse", "target": "out"},
+        ],
+        settings={"engine": "tls", "tls_impersonate": "safari", "tls_default_headers": False, "tls_http_version": "h1", "tls_verify": False, "robots_txt": False},
+    )
+    options = session_options(wf.settings)
+    assert options["impersonate"] == "safari"
+    assert options["default_headers"] is False
+    assert options["verify"] is False
+    assert wf.settings.tls_http_version == "h1"
+    spider = WorkflowSpider(workflow=wf)
+    (fetch,) = [item for item in spider._enter(spider.nodes["in"], {}, None) if isinstance(item, Fetch)]
+    page = Page(url=fetch.url, status=200, text="<ul><li>Austin</li></ul>", headers={"Content-Type": "text/html"})
+    outputs = [item for item in spider.continue_after(fetch.node_id, fetch.ctx, page) if isinstance(item, dict)]
+    assert outputs[0]["name"] == "Austin"
 
 
 def test_check_reports_undefined_variables():
