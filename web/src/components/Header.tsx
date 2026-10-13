@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { Download, Eye, Pencil, Play, Save, Upload } from "lucide-react";
+import { Download, Eye, Pencil, Play, Save, Square, Upload } from "lucide-react";
 import type { Listing } from "../api/client";
 import logo from "../assets/images/logo/Crawlflow-text.png";
 import { NEW_PIPELINE_VALUE } from "../constants";
@@ -19,6 +19,7 @@ type Props = {
   onExport: () => void;
   onImport: (file: File) => void;
   onRun: (preview: boolean) => void;
+  onStop: () => void;
 };
 
 export default function Header({
@@ -36,6 +37,7 @@ export default function Header({
   onExport,
   onImport,
   onRun,
+  onStop,
 }: Props) {
   const saved = listing.filter((l) => l.source === "saved");
   const examples = listing.filter((l) => l.source === "example");
@@ -146,20 +148,18 @@ export default function Header({
         </div>
         <button
           type="button"
-          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-transparent px-3 text-[13px] text-soft hover:bg-hover hover:text-text disabled:opacity-60"
-          disabled={!!busy}
+          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-transparent px-3 text-[13px] text-soft hover:bg-hover hover:text-text"
           title="Small capped run to fill node samples"
-          onClick={() => onRun(true)}
+          onClick={() => (busy ? onStop() : onRun(true))}
         >
-          <Eye size={14} /> {busy === "preview" ? "Previewing…" : "Preview"}
+          {busy ? <Square size={14} /> : <Eye size={14} />} {busy ? "Stop" : "Preview"}
         </button>
         <button
           type="button"
-          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-coral px-3.5 text-[13px] font-bold text-[#1a0a08] hover:bg-[#ff8575] disabled:opacity-60"
-          disabled={!!busy}
-          onClick={() => onRun(false)}
+          className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-coral px-3.5 text-[13px] font-bold text-[#1a0a08] hover:bg-[#ff8575]"
+          onClick={() => (busy ? onStop() : onRun(false))}
         >
-          <Play size={14} /> {busy === "run" ? "Running…" : "Run"}
+          {busy ? <Square size={14} /> : <Play size={14} />} {busy ? "Stop" : "Run"}
         </button>
       </div>
     </header>

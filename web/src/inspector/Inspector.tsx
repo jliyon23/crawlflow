@@ -50,7 +50,7 @@ export default function Inspector({
   onCollapse,
 }: Pick<Props, "selected" | "onNodeData" | "onDelete"> & { onCollapse: () => void }) {
   return (
-    <aside data-inspector className="flex h-full w-[360px] flex-col overflow-hidden border-l border-line bg-panel">
+    <aside data-inspector className="flex h-full w-full flex-col overflow-hidden border-l border-line bg-panel">
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-line bg-panel px-3.5 pr-2 text-xs font-semibold text-soft">
         <span>{selected ? "Node" : "Inspector"}</span>
         <button type="button" className="grid h-[26px] w-[26px] cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-muted hover:bg-hover hover:text-text" title="Hide inspector" onClick={onCollapse}>

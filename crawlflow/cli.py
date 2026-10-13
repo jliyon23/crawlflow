@@ -18,6 +18,7 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument("workflow", type=Path)
     run_p.add_argument("-o", "--output", type=Path, default=None, help="Override the first Output node's path")
     run_p.add_argument("--report", type=Path, default=None, help="Write per-node samples and results as JSON")
+    run_p.add_argument("--status", type=Path, default=None, help="Rewrite live page and item counts as JSON")
 
     val_p = sub.add_parser("validate", help="Validate a workflow JSON file")
     val_p.add_argument("workflow", type=Path)
@@ -42,7 +43,8 @@ def main(argv: list[str] | None = None) -> int:
         wf = workflow_from_obj(data)
         out = str(args.output) if args.output else None
         report = str(args.report) if args.report else None
-        results = run_workflow(wf, out, report)
+        status = str(args.status) if args.status else None
+        results = run_workflow(wf, out, report, status)
         total = sum(len(v) for v in results.values())
         print(f"Finished: {total} records", file=sys.stderr)
         return 0

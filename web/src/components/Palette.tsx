@@ -9,7 +9,7 @@ type Props = {
 
 export default function Palette({ onAdd, onCollapse }: Props) {
   return (
-    <aside className="flex h-full w-[248px] flex-col overflow-hidden border-r border-line bg-panel" aria-label="Add a node">
+    <aside className="flex h-full w-full flex-col overflow-hidden border-r border-line bg-panel" aria-label="Add a node">
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-line bg-panel px-3.5 pr-2 text-xs font-semibold text-soft">
         <span>Nodes</span>
         <button type="button" className="grid h-[26px] w-[26px] cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-muted hover:bg-hover hover:text-text" title="Hide nodes" onClick={onCollapse}>

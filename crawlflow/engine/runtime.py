@@ -102,10 +102,15 @@ def output_paths(workflow: Workflow, override: str | None) -> dict[str, Path]:
     return paths
 
 
+def _write_status(path: Path, pages: int, items: int) -> None:
+    path.write_text(json.dumps({"pages": pages, "items": items}))
+
+
 def run_workflow(
     workflow: Workflow,
     output_path: str | None = None,
     report_path: str | None = None,
+    status_path: str | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     OutputPipeline.results = {}
     paths = output_paths(workflow, output_path)
@@ -114,13 +119,29 @@ def run_workflow(
         settings.set(key, value, priority="cmdline")
     process = CrawlerProcess(settings)
     crawler = process.create_crawler(WorkflowSpider)
-    state: dict[str, Any] = {}
+    state: dict[str, Any] = {"pages": 0, "items": 0}
+    status_file = Path(status_path) if status_path else None
+
+    def publish() -> None:
+        if status_file:
+            _write_status(status_file, state["pages"], state["items"])
+
+    def on_response(response, request, spider):
+        state["pages"] += 1
+        publish()
+
+    def on_item(item, response, spider):
+        state["items"] += 1
+        publish()
 
     def on_closed(spider, reason):
         state["report"] = spider.report
         state["reason"] = reason
 
+    crawler.signals.connect(on_response, signal=signals.response_received)
+    crawler.signals.connect(on_item, signal=signals.item_scraped)
     crawler.signals.connect(on_closed, signal=signals.spider_closed)
+    publish()
     process.crawl(crawler, workflow=workflow)
     process.start()
 

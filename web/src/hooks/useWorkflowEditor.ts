@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addEdge, useEdgesState, useNodesState, type Connection, type Edge, type Node } from "@xyflow/react";
 import { api, type Listing } from "../api/client";
-import { AUTOSAVE_MS, DEFAULT_EXAMPLE, DRAFT_KEY, NEW_PIPELINE_VALUE, STATUS_CLEAR_MS } from "../constants";
-import type { CrawlSettings, KeyValues, NodeData, NodeType, RunReport, Workflow, WorkflowEdge } from "../model/types";
+import { AUTOSAVE_MS, DEFAULT_EXAMPLE, DRAFT_KEY, JOB_KEY, NEW_PIPELINE_VALUE, POLL_MS, STATUS_CLEAR_MS } from "../constants";
+import type { CrawlSettings, JobSnapshot, KeyValues, NodeData, NodeType, RunReport, Workflow, WorkflowEdge } from "../model/types";
 import { defaultSettings } from "../model/types";
 import { hasUpstream, upstreamVariables } from "../model/variables";
 import {
@@ -34,6 +34,46 @@ export function useWorkflowEditor() {
   const [loaded, setLoaded] = useState(false);
   const [fitKey, setFitKey] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
+  const pollRef = useRef<number | null>(null);
+
+  const stopPoll = useCallback(() => {
+    if (pollRef.current !== null) window.clearInterval(pollRef.current);
+    pollRef.current = null;
+  }, []);
+
+  const applyJob = useCallback(
+    (job: JobSnapshot) => {
+      setReport(job);
+      if (job.status === "running") {
+        setBusy(job.preview ? "preview" : "run");
+        return;
+      }
+      stopPoll();
+      sessionStorage.removeItem(JOB_KEY);
+      setBusy(null);
+      setRunError(job.status === "failed" ? job.log || job.error || "run failed" : null);
+    },
+    [stopPoll],
+  );
+
+  const watch = useCallback(
+    (id: string) => {
+      stopPoll();
+      const tick = () => {
+        api<JobSnapshot>(`/api/runs/${id}`)
+          .then(applyJob)
+          .catch((err: Error) => {
+            stopPoll();
+            sessionStorage.removeItem(JOB_KEY);
+            setBusy(null);
+            setRunError(err.message);
+          });
+      };
+      tick();
+      pollRef.current = window.setInterval(tick, POLL_MS);
+    },
+    [applyJob, stopPoll],
+  );
 
   const load = useCallback(
     (raw: Partial<Workflow>) => {
@@ -73,6 +113,12 @@ export function useWorkflowEditor() {
       .then(load)
       .catch(() => load(blankWorkflow()));
   }, [load, refreshListing]);
+
+  useEffect(() => {
+    const jobId = sessionStorage.getItem(JOB_KEY);
+    if (jobId) watch(jobId);
+    return stopPoll;
+  }, [stopPoll, watch]);
 
   const workflow = useMemo(
     () => workflowFromGraph({ workflowId, name, settings, variables: globals, nodes, edges }),
@@ -115,15 +161,25 @@ export function useWorkflowEditor() {
     setRunError(null);
     setShowResults(true);
     try {
-      const result = await api<RunReport>("/api/run", {
+      const created = await api<{ id: string }>("/api/runs", {
         method: "POST",
         body: JSON.stringify({ workflow, preview }),
       });
-      setReport({ ...result, preview });
+      sessionStorage.setItem(JOB_KEY, created.id);
+      watch(created.id);
+    } catch (err) {
+      setBusy(null);
+      setRunError((err as Error).message);
+    }
+  };
+
+  const cancelRun = async () => {
+    const id = sessionStorage.getItem(JOB_KEY);
+    if (!id) return;
+    try {
+      applyJob(await api<JobSnapshot>(`/api/runs/${id}/cancel`, { method: "POST" }));
     } catch (err) {
       setRunError((err as Error).message);
-    } finally {
-      setBusy(null);
     }
   };
 
@@ -221,6 +277,7 @@ export function useWorkflowEditor() {
     addNode,
     deleteSelected,
     run,
+    cancelRun,
     save,
     open,
     exportJson,

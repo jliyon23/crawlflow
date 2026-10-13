@@ -169,6 +169,15 @@ export type RunReport = {
   problems: string[];
   log: string;
   preview?: boolean;
+  status?: "running" | "finished" | "failed" | "cancelled";
+  pages?: number;
+  items?: number;
+};
+
+export type JobSnapshot = RunReport & {
+  id: string;
+  status: "running" | "finished" | "failed" | "cancelled";
+  error?: string;
 };
 
 export const defaultSettings = (): CrawlSettings => ({

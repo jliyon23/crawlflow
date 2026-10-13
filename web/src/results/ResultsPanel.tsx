@@ -37,10 +37,11 @@ type Props = {
 export default function ResultsPanel({ report, error, labels, onClose }: Props) {
   const outputIds = Object.keys(report?.outputs || {});
   const [tab, setTab] = useState<string>("");
+  const outputKey = outputIds.join(",");
   useEffect(() => {
     setTab(error ? "log" : outputIds[0] || "log");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report, error]);
+  }, [outputKey, error]);
 
   if (!report && !error) return null;
   const nodeErrors = Object.entries(report?.nodes || {}).flatMap(([id, n]) =>
@@ -49,14 +50,18 @@ export default function ResultsPanel({ report, error, labels, onClose }: Props) 
   const current = report?.outputs[tab];
 
   return (
-    <section className="flex max-h-[38vh] flex-col border-t border-line bg-bg">
+    <section className="flex h-full min-h-0 flex-col border-t border-line bg-bg">
       <div className="flex items-center gap-3 border-b border-line px-3 py-1.5 text-xs">
         <strong>
           {error
             ? "Run failed"
-            : `${report?.preview ? "Preview" : "Run"} finished · ${report?.count ?? 0} records${
-                report?.reason && report.reason !== "finished" ? ` · stopped: ${report.reason}` : ""
-              }`}
+            : report?.status === "running"
+              ? `${report.preview ? "Preview" : "Run"} running · ${report.items ?? report.count} items`
+              : report?.status === "cancelled"
+                ? "Run cancelled"
+                : `${report?.preview ? "Preview" : "Run"} finished · ${report?.count ?? 0} records${
+                    report?.reason && report.reason !== "finished" ? ` · stopped: ${report.reason}` : ""
+                  }`}
         </strong>
         <div className="flex flex-1 gap-1 overflow-x-auto">
           {outputIds.map((id) => (
